@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with LoraParser. If not, see <http://www.gnu.org/licenses/>.
 """
-
+import csv
 import json
 import logging
 import re
@@ -34,31 +34,31 @@ def convert_power(power_index):
     return 17 - (3 * power_index)
 
 
-class Packet:
-    def __init__(self, dist, sf, payload_len, rssi, lsnr, freq, cod_rate, payload):
-        self.cod_rate = cod_rate
-        self.freq = freq
-        self.lsnr = lsnr
-        self.rssi = rssi
-        self.payload_len = payload_len
-        self.sf = sf
-        self.dist = dist
-        self.payload = payload
-
-    @classmethod
-    def from_gateway_message(cls, dist, msg, lorawan_message, payload):
-        return cls(dist=dist,
-                   sf=sf(msg['datr']),
-                   payload_len=len(lorawan_message.payload),
-                   rssi=msg['rssi'],
-                   lsnr=msg['lsnr'],
-                   freq=msg['freq'],
-                   cod_rate=msg['codr'],
-                   payload=payload)
-
-    def row(self):
-        # TODO: modificare questa funzione per ottenere il formato csv corretto
-        return self.dist, self.sf, self.payload_len, self.rssi, self.lsnr, self.cod_rate, self.payload
+# class Packet:
+#     def __init__(self, dist, sf, payload_len, rssi, lsnr, freq, cod_rate, payload):
+#         self.cod_rate = cod_rate
+#         self.freq = freq
+#         self.lsnr = lsnr
+#         self.rssi = rssi
+#         self.payload_len = payload_len
+#         self.sf = sf
+#         self.dist = dist
+#         self.payload = payload
+#
+#     @classmethod
+#     def from_gateway_message(cls, dist, msg, lorawan_message, payload):
+#         return cls(dist=dist,
+#                    sf=sf(msg['datr']),
+#                    payload_len=len(lorawan_message.payload),
+#                    rssi=msg['rssi'],
+#                    lsnr=msg['lsnr'],
+#                    freq=msg['freq'],
+#                    cod_rate=msg['codr'],
+#                    payload=payload)
+#
+#     def row(self):
+#         # TODO: modificare questa funzione per ottenere il formato csv corretto
+#         return self.sf, self.payload_len, self.rssi, self.lsnr, self.cod_rate, self.payload
 
 
 class GatewayMessageHandler:
@@ -67,46 +67,47 @@ class GatewayMessageHandler:
         self.devices = devices
 
     def parse(self, file_name):
-        with open(file_name, 'r') as f:
+        with open(BASE_PATH + file_name, 'r') as input, open(BASE_PATH + 'results.csv', 'wb') as output:
             self.log.info("Opened file {}".format(file_name))
 
-            for row in f.readlines():
-                self.parse_row(row)
+            for row in input.readlines():
+                parsed = self.parse_row(row)
+                # FIXME: replace with csv.writer
+                if parsed:
+                    output.write(bytes("{},{},{},{},{},{}\n".format(*parsed), encoding='ascii'))
+                    print("{},{},{},{},{},{}".format(*parsed))
 
     def parse_row(self, message):
         payload = json.loads(message)
 
         for message in payload.get("rxpk", []):
-            # self.log.info(str(message))
+
+            # skip corrupted packets
             if message['stat'] != 1:
                 continue
 
             try:
                 lorawan_message = LorawanMessage.deserialize(message['data'])
-
-                # self.log.info(lorawan_message.__dict__)
-
-                # self.log.info("Handle message {}".format(str(lorawan_message.payload)))
                 decrypted = lorawan_message.decrypt(APP_KEY)
-                # self.log.info("Decrypted {}".format(decrypted))
-                test = self.log_test(decrypted)
+                test_n, power, sf, pay_len = self.extract_test(decrypted)
             except Exception as e:
                 self.log.error("Error: {}".format(str(e)))
                 continue
 
-            self.log.info(Packet.from_gateway_message('boh', message, lorawan_message, test).row())
+            return str(test_n), str(power), str(sf), str(len(lorawan_message.payload)), str(message['rssi']), str(message['lsnr'])
 
-    def log_test(self, message):
+    @staticmethod
+    def extract_test(message):
         test_n = message[8]
         conf = message[9]
-        cod_rate = conf // 30
+        # cod_rate = conf // 30
         power = convert_power(((conf % 30) // 6) + 1)
-        data_rate = 12 - (conf % 6)
-        self.log.info("{}\t4/{}\t\t{}dBm\tsf{}".format(test_n, cod_rate + 5, power, data_rate))
-        return "{},4/{},{}dBm,sf{}".format(test_n, cod_rate + 5, power, data_rate)
+        sf = 12 - (conf % 6)
+        # self.log.info("{}\t4/{}\t\t{}dBm\tsf{}".format(test_n, cod_rate + 5, power, data_rate))
+        return test_n, power, sf, len(message)
 
 
 if __name__ == "__main__":
     logging.basicConfig(format='%(message)s', level=logging.INFO)
     handler = GatewayMessageHandler(logging.getLogger('LoraParser'), [])
-    handler.parse(BASE_PATH + "received.txt")
+    handler.parse("received.txt")
