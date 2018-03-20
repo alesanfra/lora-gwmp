@@ -1,0 +1,16 @@
+#IntelliJIDEA
+.idea
+*.iml
+# MacOXS Finder
+.DS_Store
+# Python compiled files
+*.pyc
+# build directory
+build
+temp
+engine.egg-info
+generated
+env
+venv
+.coveragerc
+.coverage
