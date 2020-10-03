@@ -26,5 +26,5 @@ def xor_bytes(first, second):
 
 
 def convert_power(power_index):
-    """Convert wapmote power index to dBm"""
+    """Convert waspmote power index to dBm"""
     return 17 - (3 * power_index)

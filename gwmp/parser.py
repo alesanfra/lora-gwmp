@@ -1,62 +1,67 @@
+import csv
 import json
-import logging
 
 from .lorawan_message import LorawanMessage
 from .util import convert_power
 
 
-class GatewayMessageHandler:
-    def __init__(self, app_key, log=None):
-        self.app_key = app_key
-        self.log = log or logging.getLogger(__name__)
+def parse(input_file_name, output_file_name, app_key):
+    with open(input_file_name, "r") as input_file:
+        rows = input_file.readlines()
 
-    def parse(self, input_file_name, output_file_name):
+    with open(output_file_name, "w") as output_file:
 
-        with open(input_file_name, "r") as input_file:
-            rows = input_file.readlines()
+        csvwriter = csv.writer(output_file)
+        csvwriter.writerow(
+            [
+                "Test number",
+                "TX power",
+                "Spreading Factor",
+                "Payload Length",
+                "RSSI",
+                "LSNR",
+            ]
+        )
 
-        with open(output_file_name, "wb") as output_file:
-            for row in rows:
-                parsed = self.parse_row(row)
-                # FIXME: replace with csv.writer
-                if parsed:
-                    output_file.write(
-                        bytes("{},{},{},{},{},{}\n".format(*parsed), encoding="ascii")
-                    )
-                    self.log.info("{},{},{},{},{},{}".format(*parsed))
+        for row in rows:
+            parsed = parse_message(row, app_key)
+            if parsed:
+                csvwriter.writerow(parsed)
 
-    def parse_row(self, message):
-        payload = json.loads(message)
 
-        for message in payload.get("rxpk", []):
+def parse_message(message, app_key):
+    payload = json.loads(message)
 
-            # skip corrupted packets
-            if message["stat"] != 1:
-                continue
+    for message in payload.get("rxpk", []):
 
-            try:
-                lorawan_message = LorawanMessage.deserialize(message["data"])
-                decrypted = lorawan_message.decrypt(self.app_key)
-                test_n, power, sf, pay_len = self.extract_test(decrypted)
-            except Exception as e:
-                self.log.error("Error: {}".format(str(e)))
-                continue
+        # skip corrupted packets
+        if message["stat"] != 1:
+            continue
 
-            return (
-                str(test_n),
-                str(power),
-                str(sf),
-                str(len(lorawan_message.payload)),
-                str(message["rssi"]),
-                str(message["lsnr"]),
+        try:
+            lorawan_message = LorawanMessage.deserialize(
+                message["data"], app_key=app_key
             )
+            test_n, power, sf, pay_len = extract_test(lorawan_message.payload)
+        except Exception as e:
+            print("Error: {}".format(str(e)))
+            continue
 
-    @staticmethod
-    def extract_test(message):
-        test_n = message[8]
-        conf = message[9]
-        # cod_rate = conf // 30
-        power = convert_power(((conf % 30) // 6) + 1)
-        sf = 12 - (conf % 6)
-        # self.log.info("{}\t4/{}\t\t{}dBm\tsf{}".format(test_n, cod_rate + 5, power, data_rate))
-        return test_n, power, sf, len(message)
+        return (
+            str(test_n),
+            str(power),
+            str(sf),
+            str(lorawan_message.original_len),
+            str(message["rssi"]),
+            str(message["lsnr"]),
+        )
+
+
+def extract_test(message):
+    test_n = message[8]
+    conf = message[9]
+    # cod_rate = conf // 30
+    power = convert_power(((conf % 30) // 6) + 1)
+    sf = 12 - (conf % 6)
+    # self.log.info("{}\t4/{}\t\t{}dBm\tsf{}".format(test_n, cod_rate + 5, power, data_rate))
+    return test_n, power, sf, len(message)

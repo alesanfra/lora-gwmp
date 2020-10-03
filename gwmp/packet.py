@@ -1,7 +1,7 @@
 import re
 
 
-def sf(data_rate):
+def extract_spreading_factor(data_rate):
     return re.findall(r"SF\d{1,2}", data_rate)[0]
 
 
@@ -20,7 +20,7 @@ class Packet:
     def from_gateway_message(cls, dist, msg, lorawan_message, payload):
         return cls(
             dist=dist,
-            sf=sf(msg["datr"]),
+            sf=extract_spreading_factor(msg["datr"]),
             payload_len=len(lorawan_message.payload),
             rssi=msg["rssi"],
             lsnr=msg["lsnr"],
