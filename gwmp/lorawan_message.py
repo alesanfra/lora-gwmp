@@ -1,20 +1,3 @@
-"""
-This file is part of LoraParser.
-
-LoraParser is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-LoraParser is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with LoraParser. If not, see <http://www.gnu.org/licenses/>.
-"""
-
 import base64
 import struct
 
@@ -23,9 +6,9 @@ from cryptography.hazmat.primitives.ciphers import Cipher
 from cryptography.hazmat.primitives.ciphers.algorithms import AES
 from cryptography.hazmat.primitives.ciphers.modes import ECB
 
-from util import key_string_to_bytes, compute_encryption_vector, xor_bytes
+from .util import compute_encryption_vector, key_string_to_bytes, xor_bytes
 
-JOIN_ACCEPT_DELAY1 = 5000000  # 5 million microseconds (5 seconds)
+JOIN_ACCEPT_DELAY1 = 5 * 1000 * 1000  # microseconds
 MAX_TMST = 0x100000000  # 2^32
 
 
@@ -38,16 +21,18 @@ class LorawanMessage:
     CONFIRMED_DATA_DOWN = 0b101
     LORAWAN_VERSION_1 = 0
 
-    def __init__(self,
-                 lorawan_type=None,
-                 version=None,
-                 mic=None,
-                 address=None,
-                 counter=None,
-                 control=None,
-                 options=None,
-                 port=None,
-                 payload=None):
+    def __init__(
+        self,
+        lorawan_type=None,
+        version=None,
+        mic=None,
+        address=None,
+        counter=None,
+        control=None,
+        options=None,
+        port=None,
+        payload=None,
+    ):
 
         self.lorawan_type = lorawan_type
         self.version = version
@@ -61,36 +46,53 @@ class LorawanMessage:
 
     @classmethod
     def deserialize(cls, data):
-        lorawan_type, lorawan_version, mac_layer_payload, mic = cls.__deserialize_mac_layer(data)
-        return cls.__deserialize_frame_layer(lorawan_type, lorawan_version, mac_layer_payload, mic)
+        (
+            lorawan_type,
+            lorawan_version,
+            mac_layer_payload,
+            mic,
+        ) = cls.__deserialize_mac_layer(data)
+        return cls.__deserialize_frame_layer(
+            lorawan_type, lorawan_version, mac_layer_payload, mic
+        )
 
     @classmethod
     def __deserialize_mac_layer(cls, r_data):
         data = str(r_data)
-        data += '=' * (4 - len(data) % 4)  # add padding to be multiple of 4
+        data += "=" * (4 - len(data) % 4)  # add padding to be multiple of 4
         # res = base64.urlsafe_b64decode(data)
         res = base64.b64decode(data)
         mac_header = res[0]
         lorawan_type = (mac_header & 0b11100000) >> 5
         lorawan_version = mac_header & 0b00000011
-        payload = res[1:len(res) - 4]
-        mic = res[len(res) - 4:]
+        payload = res[1 : len(res) - 4]
+        mic = res[len(res) - 4 :]
         return lorawan_type, lorawan_version, payload, mic
 
     @classmethod
     def __deserialize_frame_layer(cls, lorawan_type, version, data, mic):
         dev_address, frame_ctrl, frame_cnt = struct.unpack("<LBH", data[:7])
         frame_ctrl = FrameControl.deserialize(frame_ctrl)
-        options = data[7:frame_ctrl.options_len] if frame_ctrl.options_len > 0 else ""
+        options = data[7 : frame_ctrl.options_len] if frame_ctrl.options_len > 0 else ""
 
-        if len(data[7 + frame_ctrl.options_len:]) > 0:
+        if len(data[7 + frame_ctrl.options_len :]) > 0:
             port = data[7 + frame_ctrl.options_len]
-            payload = data[8 + frame_ctrl.options_len:]
+            payload = data[8 + frame_ctrl.options_len :]
         else:
             port = -1
             payload = ""
 
-        return cls(lorawan_type, version, mic, dev_address, frame_cnt, frame_ctrl, options, port, payload)
+        return cls(
+            lorawan_type,
+            version,
+            mic,
+            dev_address,
+            frame_cnt,
+            frame_ctrl,
+            options,
+            port,
+            payload,
+        )
 
     def encrypt(self, key_string):
         data = self.payload
@@ -109,11 +111,11 @@ class LorawanMessage:
 
 
 class FrameControl:
-    def __init__(self, adr=False, adr_ack_req=False, ack=False, options_length=0):
+    def __init__(self, adr=False, adr_ack_req=False, ack=False, options_len=0):
         self.adr = adr
         self.adr_ack_req = adr_ack_req
         self.ack = ack
-        self.options_len = options_length
+        self.options_len = options_len
 
     @classmethod
     def deserialize(cls, frame_ctrl):
@@ -123,6 +125,6 @@ class FrameControl:
             ack = bool(frame_ctrl & 0b00100000)
             options_length = frame_ctrl & 0b00000111
         except Exception:
-            raise TypeError('corrupted frame control field')
+            raise TypeError("Corrupted frame control field")
 
         return cls(adr, adr_ack_req, ack, options_length)
