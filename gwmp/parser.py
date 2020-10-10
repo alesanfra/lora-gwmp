@@ -2,7 +2,7 @@ import csv
 import json
 
 from .lorawan_message import LorawanMessage
-from .util import convert_power
+from .util import waspmote_power_to_dbm
 
 
 def parse(input_file_name, output_file_name, app_key):
@@ -61,7 +61,7 @@ def extract_test(message):
     test_n = message[8]
     conf = message[9]
     # cod_rate = conf // 30
-    power = convert_power(((conf % 30) // 6) + 1)
+    power = waspmote_power_to_dbm(((conf % 30) // 6) + 1)
     sf = 12 - (conf % 6)
     # self.log.info("{}\t4/{}\t\t{}dBm\tsf{}".format(test_n, cod_rate + 5, power, data_rate))
     return test_n, power, sf, len(message)

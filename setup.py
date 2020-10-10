@@ -1,22 +1,35 @@
-import os
+from pathlib import Path
 
 from setuptools import setup
 
-requirements = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "requirements.txt")
-)
-install_requires = []
+project_dir = Path(__file__).parent.absolute()
 
-if os.path.isfile(requirements):
-    with open(requirements) as f:
-        install_requires = f.read().splitlines()
+with open(project_dir / "requirements.txt") as f:
+    install_requires = f.read().splitlines()
+
+with open(project_dir / "README.md", encoding="utf-8") as f:
+    long_description = f.read()
 
 setup(
-    name="lora-gwmp",
+    name="gwmp",
     packages=["gwmp"],
+    scripts=["bin/gwmp"],
     version="0.0.1",
-    description="Parser for GWMP messages used in LoRa networks",
+    description="Parser for GWMP messages used in LoRa and LoRaWAN networks",
     author="Alessio Sanfratello",
     url="https://github.com/alesanfra/lora-gwmp",
     install_requires=install_requires,
+    python_requires=">=3.6",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: GPLv3 License",
+        "Operating System :: OS Independent",
+        "Topic :: Scientific/Engineering :: Interface Engine/Protocol Translator",
+        "Topic :: Software Development :: Libraries",
+        "Topic :: Utilities",
+        "Intended Audience :: Telecommunications Industry",
+        "Intended Audience :: Science/Research",
+    ],
 )

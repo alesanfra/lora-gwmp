@@ -14,14 +14,20 @@ MAX_TMST = 0x100000000  # 2^32
 
 
 class FrameControl:
-    def __init__(self, adr=False, adr_ack_req=False, ack=False, options_len=0):
+    def __init__(
+        self,
+        adr: bool = False,
+        adr_ack_req: bool = False,
+        ack: bool = False,
+        options_len: int = 0,
+    ):
         self.adr = adr
         self.adr_ack_req = adr_ack_req
         self.ack = ack
         self.options_len = options_len
 
     @classmethod
-    def deserialize(cls, frame_ctrl):
+    def loads(cls, frame_ctrl: int):
         try:
             adr = bool(frame_ctrl & 0b10000000)
             adr_ack_req = bool(frame_ctrl & 0b01000000)
@@ -57,9 +63,8 @@ class LorawanMessage:
         port: int,
         payload: str,
     ):
-
-        self.lorawan_type = lorawan_type
-        self.version = version
+        self.lorawan_type: int = lorawan_type
+        self.version: int = version
         self.mic = mic
         self.address: str = address
         self.counter: int = counter
@@ -67,7 +72,7 @@ class LorawanMessage:
         self.options: str = options
         self.port: int = port
         self.payload: str = payload
-        self.original_len = len(payload)
+        self.original_len: int = len(payload)
 
     @classmethod
     def deserialize(cls, data, app_key=None):
@@ -120,7 +125,7 @@ class LorawanMessage:
     @staticmethod
     def __deserialize_frame_layer(data):
         dev_address, frame_ctrl, frame_cnt = struct.unpack("<LBH", data[:7])
-        frame_ctrl = FrameControl.deserialize(frame_ctrl)
+        frame_ctrl = FrameControl.loads(frame_ctrl)
         options = data[7 : frame_ctrl.options_len] if frame_ctrl.options_len > 0 else ""
 
         if len(data[7 + frame_ctrl.options_len :]) > 0:

@@ -1,19 +1,10 @@
-import pathlib
-
-import pytest
-
-from gwmp.parser import parse, parse_message
+from gwmp import parse, parse_message
 
 APP_KEY = "000102030405060708090A0B0C0D0E0F"
 
 
-@pytest.fixture
-def data_folder():
-    return pathlib.Path(__file__).parent / "data"
-
-
-def test_handler(data_folder):
-    parse(data_folder / "received.txt", data_folder / "results.csv", APP_KEY)
+def test_handler(data_folder, tmp_path):
+    parse(data_folder / "received.txt", tmp_path / "results.csv", APP_KEY)
 
 
 def test_parse_message():
@@ -23,4 +14,4 @@ def test_parse_message():
         '"data":"QAMAsqEABAADveh1TF3VY8Lxqn0pjx4="}]}'
     )
     r = parse_message(m, APP_KEY)
-    assert r[4] == -31
+    assert r[4] == "-31"
