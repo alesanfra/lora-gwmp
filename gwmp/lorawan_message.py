@@ -10,7 +10,6 @@ from cryptography.hazmat.primitives.ciphers.modes import ECB
 from .util import compute_encryption_vector, key_string_to_bytes, xor_bytes
 
 JOIN_ACCEPT_DELAY1 = 5 * 1000 * 1000  # microseconds
-MAX_TMST = 0x100000000  # 2^32
 
 
 class FrameControl:
@@ -156,5 +155,6 @@ class LorawanMessage:
 
         return xor_bytes(data, s)
 
-    def decrypt(self, key):
-        return self.encrypt(key)
+    def decrypt(self, key_string):
+        """Decryption is symmetrical to encryption"""
+        return self.encrypt(key_string)

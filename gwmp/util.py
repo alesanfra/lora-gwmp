@@ -26,5 +26,5 @@ def xor_bytes(first, second):
 
 
 def waspmote_power_to_dbm(power_index):
-    """Convert waspmote power index to dBm"""
+    """Convert Libelium Waspmote power index to dBm"""
     return 17 - (3 * power_index)

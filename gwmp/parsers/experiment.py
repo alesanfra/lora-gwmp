@@ -1,8 +1,8 @@
 import csv
 import json
 
-from .lorawan_message import LorawanMessage
-from .util import waspmote_power_to_dbm
+from ..lorawan_message import LorawanMessage
+from ..util import waspmote_power_to_dbm
 
 
 def parse(input_file_name, output_file_name, app_key):

@@ -37,6 +37,3 @@ class GatewayMessage:
             gateway = struct.unpack(GATEWAY_ADDRESS_FORMAT, data[size : size + 8])[0]
         payload = data[size + 8 :]
         return cls(version, token, gwmp_type, gateway, payload)
-
-    def get_gateway(self):
-        return str(hex(self.gateway))
