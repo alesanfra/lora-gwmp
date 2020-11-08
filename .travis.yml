@@ -1,0 +1,21 @@
+language: python
+python:
+  - '3.9'
+
+install:
+  - pip install pytest-cov
+
+script:
+  - python -m pytest --cov=gwmp tests/
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
+
+deploy:
+  provider: pypi
+  username: __token__
+  password:
+    secure: o1svdE39VLNPPW33w81khrRvJOUcsGe0ouJ6q9jnkh/XySRFpq3vxyolon24y4VC4hxw70vOSN+ri29XWWARtRh3SJCyqgbEeKJlXPimn0xQ/ipYdGMANSySiEC8E7m7sNQLwre6pZGdzKfXQtjyk5Esl9q8BWaok/3NIu425R3c/s/lgyOIN3ZtXAN2mhKYKMxfAgaARlVGFBLEf2IYgdXAc0Ct5JXf4Fo1OBKW34HKn25X2ZZozHP7Jt5awCH0VfP8aa/o1NJM9dUUu6xr9rRK8pSstqMips1G4d0TVpKLaz9q8edYgGLyYg4FCsMZJxc2sQppcHoLw3P+Xs+CPP9rtppHRVs+DpOjzllHmZZaqIFykTR+MlXoh8+lqq7ltV95W0pmKXvHaayeWx+YNlw6koC8l2usV+767Qmi/+EyJtbJrb6mG1YISQXvRbpRkaKSI9nPiAGBGEAY9944BammphKSYy0CWmwGj5erPCz3TEVw/tQfcVSYWVwxIkt5Za4/QeRQ01jI4pmMp0FFAAcmT1O0hshrj0cCUxrzShdhd3AQTBZ7M0tXGW51/Tok/3//h1X3IqSRt6kqvNVWqYzqu7iQ9tcPWyuthY68eaLk09c+JqJ07PuQSW1OYefBWZxBfyPNyFV0704BMaNN1kphP1Z/pEjIC/wXXZufL34=
+  on:
+    tags: true
+  skip_existing: true
