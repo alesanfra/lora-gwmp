@@ -14,4 +14,5 @@ def test_parse_message():
         '"data":"QAMAsqEABAADveh1TF3VY8Lxqn0pjx4="}]}'
     )
     r = parse_message(m, APP_KEY)
-    assert r[4] == "-31"
+    assert len(r) == 1
+    assert r[0][4] == "-31"

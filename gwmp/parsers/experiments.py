@@ -25,12 +25,14 @@ def parse(input_file_name, output_file_name, app_key):
 
         for row in rows:
             parsed = parse_message(row, app_key)
-            if parsed:
-                csvwriter.writerow(parsed)
+            for p in parsed or []:
+                csvwriter.writerow(p)
 
 
 def parse_message(message, app_key):
     payload = json.loads(message)
+
+    messages = []
 
     for message in payload.get("rxpk", []):
 
@@ -47,14 +49,18 @@ def parse_message(message, app_key):
             print("Error: {}".format(str(e)))
             continue
 
-        return (
-            str(test_n),
-            str(power),
-            str(sf),
-            str(lorawan_message.original_len),
-            str(message["rssi"]),
-            str(message["lsnr"]),
+        messages.append(
+            (
+                str(test_n),
+                str(power),
+                str(sf),
+                str(lorawan_message.original_len),
+                str(message["rssi"]),
+                str(message["lsnr"]),
+            )
         )
+
+    return messages
 
 
 def extract_test(message):
